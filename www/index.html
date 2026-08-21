@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pixel Art Editor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Top Header Navigation -->
+    <header class="app-header">
+      <div class="header-title">🎨 Pixel Editor</div>
+      <div class="header-actions">
+        <button id="btn-new" title="Новый холст">📄 Новый</button>
+        <button id="btn-save-project" title="Сохранить проект">💾 Сохранить</button>
+        <button id="btn-load-project" title="Загрузить проект">📂 Проекты</button>
+        <button id="btn-export" title="Скачать PNG">📥 Экспорт PNG</button>
+        <button id="btn-settings" title="Настройки">⚙️ Настройки</button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Toolbar Left -->
+      <aside class="toolbar">
+        <div class="tool-group">
+          <button id="tool-brush" class="tool-btn active" title="Кисть">✏️<span class="tool-label">Кисть</span></button>
+          <button id="tool-eraser" class="tool-btn" title="Ластик">🧹<span class="tool-label">Ластик</span></button>
+          <button id="tool-fill" class="tool-btn" title="Заливка">🪣<span class="tool-label">Заливка</span></button>
+          <button id="tool-picker" class="tool-btn" title="Пипетка">🧪<span class="tool-label">Пипетка</span></button>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool-group">
+          <button id="btn-undo" class="tool-btn" title="Отменить">↩️<span class="tool-label">Отмена</span></button>
+          <button id="btn-redo" class="tool-btn" title="Повторить">↪️<span class="tool-label">Повтор</span></button>
+          <button id="btn-toggle-grid" class="tool-btn active" title="Сетка">🏁<span class="tool-label">Сетка</span></button>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <!-- Color Selection -->
+        <div class="color-section">
+          <label class="section-title">Цвет:</label>
+          <div class="color-picker-wrapper">
+            <input type="color" id="color-picker" value="#000000">
+            <span id="color-preview" style="background-color: #000000;"></span>
+          </div>
+          <div class="palette-container">
+            <label class="section-title">Палитра:</label>
+            <div id="palette-grid" class="palette-grid"></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Viewport / Canvas Container -->
+      <section id="viewport" class="viewport">
+        <div id="canvas-wrapper" class="canvas-wrapper">
+          <canvas id="pixel-canvas"></canvas>
+          <canvas id="grid-canvas"></canvas>
+        </div>
+
+        <!-- Zoom Controls Overlay -->
+        <div class="zoom-controls">
+          <button id="btn-zoom-in" title="Приблизить">+</button>
+          <span id="zoom-level">100%</span>
+          <button id="btn-zoom-out" title="Отдалить">-</button>
+          <button id="btn-zoom-reset" title="Сбросить масштаб">🎯</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modals -->
+
+    <!-- New Canvas Modal -->
+    <div id="modal-new" class="modal hidden">
+      <div class="modal-content">
+        <h3>Новый холст</h3>
+        <div class="form-group">
+          <label>Пресеты:</label>
+          <div class="preset-buttons">
+            <button class="preset-btn" data-w="8" data-h="8">8 x 8</button>
+            <button class="preset-btn" data-w="16" data-h="16">16 x 16</button>
+            <button class="preset-btn" data-w="32" data-h="32">32 x 32</button>
+            <button class="preset-btn" data-w="64" data-h="64">64 x 64</button>
+          </div>
+        </div>
+        <div class="form-group row">
+          <div>
+            <label for="canvas-width">Ширина:</label>
+            <input type="number" id="canvas-width" min="1" max="128" value="16">
+          </div>
+          <div>
+            <label for="canvas-height">Высота:</label>
+            <input type="number" id="canvas-height" min="1" max="128" value="16">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="modal-new-confirm" class="btn-primary">Создать</button>
+          <button id="modal-new-cancel" class="btn-secondary">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="modal-export" class="modal hidden">
+      <div class="modal-content">
+        <h3>Экспорт PNG (без фона)</h3>
+        <div class="form-group">
+          <label for="export-scale">Масштаб (пиксели):</label>
+          <select id="export-scale">
+            <option value="1">1x (Оригинальный)</option>
+            <option value="2">2x</option>
+            <option value="4">4x</option>
+            <option value="8" selected>8x (Рекомендуемый)</option>
+            <option value="16">16x (Высокий)</option>
+            <option value="32">32x (Ультра)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Предпросмотр экспорта:</label>
+          <div class="export-preview-box">
+            <img id="export-preview-img" alt="Export Preview">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="modal-export-download" class="btn-primary">📥 Скачать PNG</button>
+          <button id="modal-export-cancel" class="btn-secondary">Закрыть</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projects Modal -->
+    <div id="modal-projects" class="modal hidden">
+      <div class="modal-content modal-large">
+        <h3>Сохраненные проекты</h3>
+        <div id="projects-list" class="projects-list">
+          <p class="empty-msg">Нет сохраненных проектов</p>
+        </div>
+        <div class="modal-actions">
+          <button id="modal-projects-close" class="btn-secondary">Закрыть</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="modal-settings" class="modal hidden">
+      <div class="modal-content">
+        <h3>Настройки</h3>
+        <div class="form-group">
+          <label>Тема оформления и фон холста:</label>
+          <div class="theme-options">
+            <label class="theme-radio-label">
+              <input type="radio" name="theme-option" value="dark" checked>
+              <span class="radio-custom"></span>
+              Сонный темно-серый (Темный)
+            </label>
+            <label class="theme-radio-label">
+              <input type="radio" name="theme-option" value="light">
+              <span class="radio-custom"></span>
+              Бело светло-серый (Светлый)
+            </label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="modal-settings-close" class="btn-primary">Готово</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
