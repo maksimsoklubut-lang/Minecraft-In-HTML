@@ -8,11 +8,15 @@
 </head>
 <body>
   <div id="app">
+    <!-- Hidden File Input for Image Import -->
+    <input type="file" id="file-input" accept="image/*" style="display: none;">
+
     <!-- Top Header Navigation -->
     <header class="app-header">
       <div class="header-title">🎨 Pixel Editor</div>
       <div class="header-actions">
         <button id="btn-new" title="Новый холст">📄 Новый</button>
+        <button id="btn-import-file" title="Открыть изображение">🖼️ Открыть</button>
         <button id="btn-save-project" title="Сохранить проект">💾 Сохранить</button>
         <button id="btn-load-project" title="Загрузить проект">📂 Проекты</button>
         <button id="btn-export" title="Скачать PNG">📥 Экспорт PNG</button>
@@ -140,6 +144,7 @@
           <p class="empty-msg">Нет сохраненных проектов</p>
         </div>
         <div class="modal-actions">
+          <button id="modal-projects-import" class="btn-primary">🖼️ Импорт файла</button>
           <button id="modal-projects-close" class="btn-secondary">Закрыть</button>
         </div>
       </div>

@@ -55,10 +55,10 @@
   }
 
   // Canvas Initialization
-  function initCanvas(w, h) {
+  function initCanvas(w, h, initialPixels = null) {
     width = w;
     height = h;
-    pixelData = new Array(width * height).fill(null);
+    pixelData = initialPixels ? [...initialPixels] : new Array(width * height).fill(null);
     history = [];
     historyStep = -1;
 
@@ -75,14 +75,16 @@
     renderGridCanvas();
   }
 
-  // Center canvas in viewport
+  // Center canvas in viewport (Ensure cell size is comfortable, e.g. at least 8-16px per pixel)
   function centerCanvas() {
     const vpRect = viewport.getBoundingClientRect();
-    const minDim = Math.min(vpRect.width, vpRect.height) * 0.75;
-    scale = Math.floor(minDim / Math.max(width, height)) || 1;
-    if (scale < 1) scale = 1;
-    if (scale > 40) scale = 40;
+    const minDim = Math.min(vpRect.width || 360, vpRect.height || 640) * 0.75;
+    // Aim for 1 cell size to be around 12-20px on screen, minimum 8px
+    let targetScale = Math.floor(minDim / Math.max(width, height));
+    if (targetScale < 8) targetScale = 8;
+    if (targetScale > 40) targetScale = 40;
 
+    scale = targetScale;
     panX = (vpRect.width - width * scale) / 2;
     panY = (vpRect.height - height * scale) / 2;
 
@@ -147,6 +149,13 @@
       g: (num >> 8) & 255,
       b: num & 255
     };
+  }
+
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(x => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
   }
 
   // History State
@@ -308,6 +317,52 @@
     return { x, y };
   }
 
+  // Import File Handler
+  function handleFileImport(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        // Cap max imported image dimensions for pixel art canvas (max 128x128)
+        let imgW = img.width;
+        let imgH = img.height;
+        if (imgW > 128 || imgH > 128) {
+          const maxDim = Math.max(imgW, imgH);
+          imgW = Math.round((imgW / maxDim) * 64);
+          imgH = Math.round((imgH / maxDim) * 64);
+        }
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = imgW;
+        tempCanvas.height = imgH;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(img, 0, 0, imgW, imgH);
+
+        const imgData = tempCtx.getImageData(0, 0, imgW, imgH);
+        const importedPixels = new Array(imgW * imgH);
+
+        for (let i = 0; i < imgW * imgH; i++) {
+          const r = imgData.data[i * 4];
+          const g = imgData.data[i * 4 + 1];
+          const b = imgData.data[i * 4 + 2];
+          const a = imgData.data[i * 4 + 3];
+
+          if (a < 128) {
+            importedPixels[i] = null; // Transparent
+          } else {
+            importedPixels[i] = rgbToHex(r, g, b);
+          }
+        }
+
+        initCanvas(imgW, imgH, importedPixels);
+        centerCanvas();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   // Create Palette Swatches
   function createPaletteUI() {
     const grid = document.getElementById('palette-grid');
@@ -367,6 +422,24 @@
       showGrid = !showGrid;
       e.currentTarget.classList.toggle('active', showGrid);
       renderGridCanvas();
+    });
+
+    // File Import Button & Input
+    const fileInput = document.getElementById('file-input');
+    document.getElementById('btn-import-file').addEventListener('click', () => fileInput.click());
+    const importProjBtn = document.getElementById('modal-projects-import');
+    if (importProjBtn) {
+      importProjBtn.addEventListener('click', () => {
+        document.getElementById('modal-projects').classList.add('hidden');
+        fileInput.click();
+      });
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileImport(e.target.files[0]);
+        fileInput.value = ''; // Reset
+      }
     });
 
     // Color picker
